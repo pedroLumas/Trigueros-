@@ -1,0 +1,391 @@
+:root {
+  /* Concepto: escenario fijo de 1280×720 que se escala entero. El claro ocupa
+     el centro y la selva de los laterales aloja la interfaz, para no tapar
+     nunca la caza. Un único aspecto oscuro (selva al anochecer). */
+  color-scheme: dark;
+  --page: #050b07;
+  --panel: rgba(7, 16, 9, 0.86);
+  --panel-hi: rgba(24, 42, 25, 0.95);
+  --edge: #263d27;
+  --edge-hi: #3f633a;
+  --bone: #f1e8d2;
+  --moss: #93a98a;
+  --tiger: #ee8b2f;
+  --blood: #d42b36;
+  --blood-hi: #ff5c66;
+  --blood-deep: #5e0c13;
+  --gold: #eabf52;
+  --leaf: #6cbc58;
+  --danger: #e54a3f;
+  --shadow: rgba(0, 0, 0, 0.55);
+  --display: "Teko", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --body: "Barlow Semi Condensed", "Segoe UI", system-ui, sans-serif;
+}
+
+html { height: 100%; box-sizing: border-box; background: var(--page); }
+*, *::before, *::after { box-sizing: inherit; }
+body {
+  height: 100%;
+  margin: 0;
+  background: var(--page);
+  color: var(--bone);
+  font-family: var(--body);
+  font-size: 14px;
+  overflow: hidden;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+  overflow: hidden;
+}
+#stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1280px;
+  height: 720px;
+  transform-origin: 0 0;
+  overflow: hidden;
+  border-radius: 4px;
+  box-shadow: 0 0 0 1px var(--edge), 0 30px 80px var(--shadow);
+}
+#game {
+  position: absolute;
+  inset: 0;
+  width: 1280px;
+  height: 720px;
+  display: block;
+  touch-action: none;
+  cursor: default;
+}
+#game.over-prey { cursor: crosshair; }
+#ui { position: absolute; inset: 0; pointer-events: none; }
+#ui > * { pointer-events: auto; }
+
+[hidden] { display: none !important; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+kbd {
+  display: inline-block;
+  min-width: 20px;
+  padding: 1px 5px 0;
+  border: 1px solid var(--edge-hi);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1.1;
+  text-align: center;
+  color: var(--bone);
+}
+
+/* ---------- Piezas comunes ---------- */
+.hud, .panel {
+  position: absolute;
+  background: var(--panel);
+  border: 1px solid var(--edge);
+  border-radius: 6px;
+  box-shadow: 0 10px 26px var(--shadow), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+.label {
+  margin: 0;
+  font-family: var(--body);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--moss);
+}
+.panel-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.drop {
+  display: inline-block;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 0 50% 50% 50%;
+  transform: rotate(45deg);
+  background: radial-gradient(circle at 60% 60%, var(--blood-hi), var(--blood) 55%, var(--blood-deep));
+  box-shadow: 0 0 10px rgba(212, 43, 54, 0.45);
+}
+.drop-sm { width: 10px; height: 10px; box-shadow: none; }
+
+/* ---------- Vida (arriba izquierda) ---------- */
+.hud-health { left: 18px; top: 16px; width: 252px; padding: 12px 14px 14px; display: grid; gap: 8px; }
+.hud-row { display: flex; align-items: baseline; justify-content: space-between; }
+.hp-value { font-family: var(--display); font-size: 38px; line-height: 0.8; font-variant-numeric: tabular-nums; }
+.hp-value .of { font-size: 24px; color: var(--moss); }
+.bar {
+  position: relative;
+  height: 12px;
+  border-radius: 3px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+.bar-ghost, .bar-fill { position: absolute; top: 0; bottom: 0; left: 0; width: 100%; border-radius: 3px; }
+.bar-ghost { background: rgba(255, 228, 200, 0.6); }
+.bar-fill { background: linear-gradient(180deg, #92d97c, var(--leaf)); }
+.bar-fill.mid { background: linear-gradient(180deg, #f4d47b, var(--gold)); }
+.bar-fill.low { background: linear-gradient(180deg, #ff7d70, var(--danger)); }
+.hud-health.hurt { animation: hurt 0.35s ease-out; }
+.hud-health.healed { animation: healed 0.5s ease-out; }
+@keyframes hurt {
+  0% { border-color: var(--danger); box-shadow: 0 0 0 2px rgba(229, 74, 63, 0.6), 0 10px 26px var(--shadow); transform: translateX(-3px); }
+  35% { transform: translateX(2px); }
+  100% { transform: none; }
+}
+@keyframes healed {
+  0% { border-color: var(--leaf); box-shadow: 0 0 0 2px rgba(108, 188, 88, 0.55), 0 10px 26px var(--shadow); }
+}
+
+/* ---------- Ayuda (izquierda) ---------- */
+.hud-help { left: 18px; top: 122px; width: 252px; padding: 14px; display: grid; gap: 12px; }
+.keys { margin: 0; display: grid; grid-template-columns: 1fr auto; gap: 7px 10px; align-items: center; font-size: 14px; }
+.keys dt { color: var(--moss); }
+.keys dd { margin: 0; font-weight: 600; text-align: right; }
+.help-note { margin: 0; font-size: 13.5px; line-height: 1.35; color: var(--bone); }
+.legend { margin: 0; padding: 10px 0 0; list-style: none; display: grid; gap: 6px; border-top: 1px solid var(--edge); font-size: 13.5px; }
+.legend li { display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.legend em { margin-left: auto; font-style: normal; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--danger); }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.sw-rabbit { background: #c9b89c; width: 9px; height: 9px; }
+.sw-antelope { background: #c8964a; width: 11px; }
+.sw-boar { background: #4e3727; box-shadow: 0 0 0 1px #8a6a52; }
+.sw-deer { background: #9a5532; width: 14px; height: 14px; }
+
+/* ---------- Depuración ---------- */
+.debug-panel { left: 18px; top: 122px; width: 252px; padding: 14px; display: grid; gap: 10px; border-color: #5a4a1e; }
+.dbg-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.dbg-grid button, .dbg-reset {
+  padding: 7px 8px;
+  border: 1px solid var(--edge-hi);
+  border-radius: 4px;
+  background: var(--panel-hi);
+  font-size: 14px;
+  font-weight: 600;
+}
+.dbg-grid button:hover, .dbg-reset:hover { border-color: var(--gold); }
+.dbg-grid button:active, .dbg-reset:active { transform: translateY(1px); }
+.dbg-label { margin: 4px 0 0; font-size: 12px; color: var(--moss); }
+.dbg-check { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.dbg-check input { width: 16px; height: 16px; accent-color: var(--gold); }
+.dbg-reset { margin-top: 4px; border-color: #6e2a24; color: #ffb3a8; }
+.debug-btn {
+  position: absolute;
+  left: 18px;
+  bottom: 104px;
+  padding: 4px 10px;
+  border: 1px solid var(--edge);
+  border-radius: 4px;
+  background: rgba(7, 16, 9, 0.7);
+  font-size: 12px;
+  color: var(--moss);
+}
+.debug-btn:hover { color: var(--bone); border-color: var(--edge-hi); }
+
+/* ---------- Ataque especial (abajo izquierda) ---------- */
+.special {
+  left: 18px;
+  bottom: 16px;
+  width: 252px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-align: left;
+}
+.special-icon {
+  position: relative;
+  flex: none;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 40%, #3a1013, #160608);
+  border: 2px solid #5b1a1e;
+}
+.special-icon svg { position: absolute; inset: 9px; width: 44px; height: 44px; }
+.special-icon path { fill: none; stroke: var(--blood-hi); stroke-width: 6; stroke-linecap: round; }
+.special-cd { position: absolute; inset: 0; border-radius: 50%; }
+.special-time {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding-top: 4px;
+  font-family: var(--display);
+  font-size: 28px;
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 2px 4px #000;
+}
+.special-text { display: grid; gap: 2px; }
+.special-text strong { font-family: var(--display); font-size: 23px; font-weight: 500; line-height: 0.9; letter-spacing: 0.02em; }
+.special-text small { font-size: 13px; color: var(--moss); }
+.special-text .special-meta { font-size: 12px; opacity: 0.8; }
+.special.ready { border-color: #7a2328; }
+.special.ready .special-icon { border-color: var(--blood); box-shadow: 0 0 16px rgba(212, 43, 54, 0.55); animation: ready-glow 1.6s ease-in-out infinite; }
+.special.ready #special-state { color: var(--blood-hi); font-weight: 600; }
+.special:not(.ready) .special-icon path { stroke: #7d3a3e; }
+.special.denied { animation: shake 0.3s; }
+@keyframes ready-glow { 50% { box-shadow: 0 0 26px rgba(255, 70, 80, 0.75); } }
+@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+/* ---------- Sangre (arriba derecha) ---------- */
+.hud-blood { right: 18px; top: 16px; width: 252px; padding: 12px 14px; display: grid; gap: 4px; }
+.blood-line { display: flex; align-items: center; gap: 12px; }
+.blood-value {
+  font-family: var(--display);
+  font-size: 52px;
+  line-height: 0.8;
+  padding-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+.blood-sub { display: flex; justify-content: space-between; align-items: baseline; font-size: 13.5px; color: var(--moss); }
+.blood-sub b { font-family: var(--display); font-size: 22px; font-weight: 500; line-height: 0.8; color: var(--bone); font-variant-numeric: tabular-nums; }
+.hud-blood.bump .drop { animation: drop-bump 0.4s ease-out; }
+.hud-blood.bump .blood-value { animation: num-bump 0.4s ease-out; }
+@keyframes drop-bump { 40% { transform: rotate(45deg) scale(1.45); box-shadow: 0 0 22px rgba(255, 70, 80, 0.9); } }
+@keyframes num-bump { 40% { transform: scale(1.12); color: var(--blood-hi); } }
+.blood-value { transform-origin: left center; display: inline-block; }
+
+/* ---------- Mejoras (derecha) ---------- */
+.upgrades-panel {
+  right: 18px;
+  top: 146px;
+  width: 252px;
+  padding: 10px 10px 8px;
+  display: grid;
+  gap: 8px;
+  border-color: var(--edge-hi);
+}
+.close-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--edge-hi);
+  border-radius: 4px;
+  background: transparent;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--moss);
+}
+.close-btn:hover { color: var(--bone); }
+.upgrade-list { display: grid; gap: 6px; }
+.upgrade-card {
+  display: grid;
+  gap: 2px;
+  padding: 7px 9px 8px;
+  border: 1px solid var(--edge);
+  border-radius: 5px;
+  background: var(--panel-hi);
+}
+.uc-head { display: flex; align-items: baseline; justify-content: space-between; }
+.uc-head h3 { margin: 0; font-family: var(--display); font-size: 23px; font-weight: 500; line-height: 0.9; letter-spacing: 0.02em; }
+.uc-level { font-size: 12px; color: var(--moss); text-transform: uppercase; letter-spacing: 0.12em; }
+.uc-level b { display: inline-block; font-family: var(--display); font-size: 20px; font-weight: 500; letter-spacing: 0; color: var(--gold); }
+.uc-level b.pop { animation: pop 0.45s ease-out; }
+.uc-effect { margin: 0; font-size: 13px; color: var(--moss); }
+.uc-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.uc-change { font-size: 13.5px; font-weight: 600; font-variant-numeric: tabular-nums; }
+.uc-buy {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 70px;
+  justify-content: center;
+  padding: 4px 10px 3px;
+  border: 1px solid #3a2a2a;
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--moss);
+  font-family: var(--display);
+  font-size: 21px;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.upgrade-card.affordable { border-color: #5d4a1c; }
+.upgrade-card.affordable .uc-buy { border-color: var(--blood); background: linear-gradient(180deg, #a51e29, #6e121a); color: var(--bone); }
+.upgrade-card.affordable .uc-buy:hover { filter: brightness(1.15); }
+.upgrade-card.affordable .uc-buy:active { transform: translateY(1px); }
+.upgrade-card.bought { animation: bought 0.6s ease-out; }
+.upgrade-card.denied { animation: shake 0.3s; }
+@keyframes bought { 0% { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(234, 191, 82, 0.7), 0 0 24px rgba(234, 191, 82, 0.45); background: rgba(80, 64, 20, 0.95); } }
+@keyframes pop { 40% { transform: scale(1.6); } }
+.panel-note { margin: 0; font-size: 12.5px; color: var(--moss); text-align: center; }
+
+.upgrades-btn {
+  right: 18px;
+  bottom: 16px;
+  width: 252px;
+  min-height: 62px;
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-color: var(--edge-hi);
+}
+.upgrades-btn:hover { border-color: var(--gold); }
+.ub-title { font-family: var(--display); font-size: 30px; font-weight: 500; line-height: 0.8; padding-top: 4px; }
+.ub-badge {
+  margin-left: auto;
+  white-space: nowrap;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: #241a05;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: badge 1.4s ease-in-out infinite;
+}
+.ub-badge[hidden] + kbd { margin-left: auto; }
+@keyframes badge { 50% { box-shadow: 0 0 12px rgba(234, 191, 82, 0.8); } }
+
+/* ---------- Muerte ---------- */
+.death {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 45%, rgba(70, 6, 12, 0.72), rgba(10, 2, 3, 0.9));
+  animation: fade-in 0.5s ease-out;
+}
+.death-card { display: grid; justify-items: center; gap: 18px; text-align: center; }
+.death-card h1 {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 120px;
+  font-weight: 600;
+  line-height: 0.8;
+  color: var(--blood-hi);
+  text-shadow: 0 6px 30px rgba(0, 0, 0, 0.8);
+  text-wrap: balance;
+}
+.death-stats { margin: 0; display: flex; gap: 22px; font-size: 17px; color: var(--moss); }
+.death-stats b { font-family: var(--display); font-size: 30px; font-weight: 500; color: var(--bone); margin-right: 4px; }
+.restart-btn {
+  padding: 12px 28px 9px;
+  border: 1px solid var(--blood-hi);
+  border-radius: 5px;
+  background: linear-gradient(180deg, #b8222e, #761219);
+  font-family: var(--display);
+  font-size: 30px;
+  line-height: 1;
+  letter-spacing: 0.03em;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+}
+.restart-btn:hover { filter: brightness(1.15); }
+@keyframes fade-in { from { opacity: 0; } }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}

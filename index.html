@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Tigre Incremental</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=Teko:wght@500;600&display=swap">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<!--BUILD:BODY-START-->
+<div id="viewport">
+  <div id="stage">
+    <canvas id="game" width="1280" height="720" aria-label="Claro de selva donde caza el tigre"></canvas>
+
+    <div id="ui">
+      <!-- Arriba a la izquierda: vida -->
+      <section class="hud hud-health" id="hud-health" aria-label="Vida del tigre">
+        <div class="hud-row">
+          <span class="label">Vida</span>
+          <span class="hp-value"><span id="hp-current">100</span><span class="of"> / <span id="hp-max">100</span></span></span>
+        </div>
+        <div class="bar"><div class="bar-ghost" id="hp-ghost"></div><div class="bar-fill" id="hp-bar"></div></div>
+      </section>
+
+      <!-- Ayuda de controles (se sustituye por el panel de depuración) -->
+      <section class="panel hud-help" id="hud-help" aria-label="Controles">
+        <h2 class="label">Cómo cazar</h2>
+        <dl class="keys">
+          <dt>Clic en el suelo</dt><dd>Caminar</dd>
+          <dt>Clic en un animal</dt><dd>Cazarlo</dd>
+          <dt>Clic derecho</dt><dd>Zarpazo sangriento</dd>
+          <dt><kbd>T</kbd></dt><dd>Mejoras</dd>
+          <dt><kbd>F1</kbd></dt><dd>Depuración</dd>
+        </dl>
+        <p class="help-note">Pasa por encima de los cadáveres para devorarlos. Dan sangre y vida, pero se pudren en 20 segundos.</p>
+        <ul class="legend" aria-label="Animales">
+          <li><i class="sw sw-rabbit"></i>Conejo · 5</li>
+          <li><i class="sw sw-antelope"></i>Antílope · 12</li>
+          <li><i class="sw sw-boar"></i>Jabalí · 25 <em>muerde</em></li>
+          <li><i class="sw sw-deer"></i>Ciervo · 40 <em>embiste</em></li>
+        </ul>
+      </section>
+
+      <!-- Panel de depuración (F1) -->
+      <section class="panel debug-panel" id="debug-panel" aria-label="Depuración" hidden>
+        <div class="panel-head"><h2 class="label">Depuración</h2><kbd>F1</kbd></div>
+        <div class="dbg-grid">
+          <button type="button" data-dbg="blood">+100 sangre</button>
+          <button type="button" data-dbg="heal">Curar del todo</button>
+        </div>
+        <p class="dbg-label">Generar animal</p>
+        <div class="dbg-grid">
+          <button type="button" data-dbg="spawn" data-kind="rabbit">Conejo</button>
+          <button type="button" data-dbg="spawn" data-kind="antelope">Antílope</button>
+          <button type="button" data-dbg="spawn" data-kind="boar">Jabalí</button>
+          <button type="button" data-dbg="spawn" data-kind="deer">Ciervo</button>
+        </div>
+        <label class="dbg-check" for="dbg-detection"><input type="checkbox" id="dbg-detection"> Mostrar radio de detección</label>
+        <label class="dbg-check" for="dbg-range"><input type="checkbox" id="dbg-range"> Mostrar alcance de ataque</label>
+        <button type="button" class="dbg-reset" data-dbg="reset">Reiniciar prototipo</button>
+      </section>
+
+      <button type="button" class="debug-btn" id="debug-btn">Depuración · F1</button>
+
+      <!-- Abajo a la izquierda: ataque especial -->
+      <button type="button" class="hud special ready" id="special-btn" aria-label="Zarpazo sangriento">
+        <span class="special-icon">
+          <svg viewBox="0 0 64 64" aria-hidden="true"><path d="M15 51 Q29 36 31 11"/><path d="M26 54 Q41 39 44 14"/><path d="M37 56 Q52 42 54 20"/></svg>
+          <span class="special-cd" id="special-cd"></span>
+          <span class="special-time" id="special-time"></span>
+        </span>
+        <span class="special-text">
+          <strong>Zarpazo sangriento</strong>
+          <small id="special-state">Listo · clic derecho</small>
+          <small class="special-meta">30 de daño en arco · 10 s</small>
+        </span>
+      </button>
+
+      <!-- Arriba a la derecha: sangre -->
+      <section class="hud hud-blood" id="hud-blood" aria-label="Sangre">
+        <span class="label">Sangre</span>
+        <div class="blood-line"><span class="drop" id="blood-drop" aria-hidden="true"></span><span class="blood-value" id="blood-value">0</span></div>
+        <div class="blood-sub">Animales devorados <b id="devoured-value">0</b></div>
+      </section>
+
+      <!-- Panel de mejoras -->
+      <section class="panel upgrades-panel" id="upgrades-panel" aria-label="Mejoras" hidden>
+        <div class="panel-head"><h2 class="label">Mejoras</h2><button type="button" class="close-btn" id="upgrades-close" aria-label="Cerrar mejoras">×</button></div>
+        <div class="upgrade-list" id="upgrade-list"></div>
+        <p class="panel-note">Juego en pausa · <kbd>T</kbd> o <kbd>Esc</kbd> para volver</p>
+      </section>
+
+      <!-- Abajo a la derecha: abrir mejoras -->
+      <button type="button" class="hud upgrades-btn" id="upgrades-btn" aria-expanded="false" aria-controls="upgrades-panel">
+        <span class="ub-title">Mejoras</span>
+        <span class="ub-badge" id="upgrades-badge" hidden>Puedes comprar</span>
+        <kbd>T</kbd>
+      </button>
+
+      <!-- Pantalla de muerte -->
+      <div class="death" id="death-screen" hidden>
+        <div class="death-card" role="dialog" aria-labelledby="death-title">
+          <h1 id="death-title">Has muerto</h1>
+          <p class="death-stats" id="death-stats"></p>
+          <button type="button" class="restart-btn" id="restart-btn">Reiniciar desde cero</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<!--BUILD:BODY-END-->
+
+<script src="js/config.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/events.js"></script>
+<script src="js/effects.js"></script>
+<script src="js/arena.js"></script>
+<script src="js/combat.js"></script>
+<script src="js/animals.js"></script>
+<script src="js/tiger.js"></script>
+<script src="js/spawner.js"></script>
+<script src="js/corpses.js"></script>
+<script src="js/economy.js"></script>
+<script src="js/upgrades.js"></script>
+<script src="js/input.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/debug.js"></script>
+<script src="js/game.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
