@@ -13,6 +13,15 @@
 <body>
 <!--BUILD:BODY-START-->
 <div id="viewport">
+  <!-- Aviso en móviles en vertical -->
+  <div class="rotate-hint" id="rotate-hint" hidden>
+    <div class="rotate-card">
+      <div class="rotate-phone" aria-hidden="true"></div>
+      <p class="rotate-title">Gira el móvil</p>
+      <p class="rotate-text">El claro se ve mucho más grande en horizontal.</p>
+      <button type="button" class="rotate-skip" id="rotate-skip">Jugar en vertical</button>
+    </div>
+  </div>
   <div id="stage">
     <canvas id="game" width="1280" height="720" aria-label="Claro de selva donde caza el tigre"></canvas>
 
@@ -30,11 +39,11 @@
       <section class="panel hud-help" id="hud-help" aria-label="Controles">
         <h2 class="label">Cómo cazar</h2>
         <dl class="keys">
-          <dt>Clic en el suelo</dt><dd>Caminar</dd>
-          <dt>Clic en un animal</dt><dd>Cazarlo</dd>
-          <dt>Clic derecho</dt><dd>Zarpazo sangriento</dd>
-          <dt><kbd>T</kbd></dt><dd>Mejoras</dd>
-          <dt><kbd>F1</kbd></dt><dd>Depuración</dd>
+          <dt data-touch="Toca el suelo">Clic en el suelo</dt><dd>Caminar</dd>
+          <dt data-touch="Toca un animal">Clic en un animal</dt><dd>Cazarlo</dd>
+          <dt data-touch="Botón de abajo">Clic derecho</dt><dd>Zarpazo sangriento</dd>
+          <dt data-touch="Botón de abajo"><kbd>T</kbd></dt><dd>Mejoras</dd>
+          <dt data-touch="Botón de abajo"><kbd>F1</kbd></dt><dd>Depuración</dd>
         </dl>
         <p class="help-note">Pasa por encima de los cadáveres para devorarlos. Dan sangre y vida, pero se pudren en 20 segundos.</p>
         <ul class="legend" aria-label="Animales">

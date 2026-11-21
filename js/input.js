@@ -13,6 +13,8 @@ const Input = {
     canvas.addEventListener('pointerdown', e => this.onPointerDown(e));
     canvas.addEventListener('pointermove', e => this.onPointerMove(e));
     canvas.addEventListener('pointerleave', () => { this.mouse.inside = false; });
+    // Con el dedo no hay cursor: no dejar la vista previa del zarpazo "pegada".
+    canvas.addEventListener('pointerup', e => { if (e.pointerType === 'touch') this.mouse.inside = false; });
     stage.addEventListener('contextmenu', e => e.preventDefault());
     window.addEventListener('keydown', e => this.onKeyDown(e));
   },
@@ -38,7 +40,8 @@ const Input = {
     const p = this.mouse;
 
     if (e.button === 0) {
-      const animal = Game.animalAt(p.x, p.y);
+      // Con el dedo se apunta peor: margen más generoso para tocar animales.
+      const animal = Game.animalAt(p.x, p.y, e.pointerType === 'touch' ? 28 : 10);
       if (animal) {
         tiger.orderAttack(animal);
         Effects.targetMarker(animal);

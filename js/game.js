@@ -62,6 +62,7 @@ const Game = {
       this.canvas.height = Math.round(H * q);
     }
     Arena.ensureBackground(q);
+    UI.updateOrientationHint();
   },
 
   get paused() {
@@ -122,12 +123,12 @@ const Game = {
   },
 
   // Animal bajo el cursor (con un margen generoso para que sea fácil acertar).
-  animalAt(x, y) {
+  animalAt(x, y, margin = 10) {
     let best = null, bestD = Infinity;
     for (const a of this.world.animals) {
       if (!a.alive) continue;
       const d = distXY(x, y, a.x, a.y);
-      if (d <= a.radius + 10 && d < bestD) { best = a; bestD = d; }
+      if (d <= a.radius + margin && d < bestD) { best = a; bestD = d; }
     }
     return best;
   },

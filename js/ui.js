@@ -26,6 +26,17 @@ const UI = {
     };
     this.buildUpgradeCards();
 
+    // Pantallas táctiles: textos de ayuda adaptados y aviso para girar el móvil.
+    this.touch = window.matchMedia && matchMedia('(pointer: coarse)').matches;
+    this.rotateDismissed = false;
+    if (this.touch) {
+      for (const dt of document.querySelectorAll('.keys dt[data-touch]')) dt.textContent = dt.dataset.touch;
+    }
+    $('rotate-skip').addEventListener('click', () => {
+      this.rotateDismissed = true;
+      this.updateOrientationHint();
+    });
+
     this.el.upgradesBtn.addEventListener('click', () => this.toggleUpgrades());
     this.el.upgradesClose.addEventListener('click', () => this.closeUpgrades());
     this.el.specialBtn.addEventListener('click', () => Game.trySpecial(null));
@@ -114,7 +125,7 @@ const UI = {
       el.specialBtn.classList.toggle('ready', ready);
       el.specialCd.style.background = ready ? 'none' : `conic-gradient(rgba(4, 9, 5, 0.78) ${(cd / total) * 360}deg, transparent 0deg)`;
       el.specialTime.textContent = ready ? '' : formatDecimal(cd, 1);
-      el.specialState.textContent = ready ? 'Listo · clic derecho' : 'Recargando…';
+      el.specialState.textContent = ready ? (this.touch ? 'Listo · tócame' : 'Listo · clic derecho') : 'Recargando…';
     }
   },
 
@@ -196,6 +207,13 @@ const UI = {
     this.upgradesOpen = false;
     this.el.upgradesPanel.hidden = true;
     this.el.upgradesBtn.setAttribute('aria-expanded', 'false');
+  },
+
+  updateOrientationHint() {
+    const hint = document.getElementById('rotate-hint');
+    if (!hint) return;
+    const portrait = window.innerHeight > window.innerWidth;
+    hint.hidden = !(this.touch && portrait && !this.rotateDismissed);
   },
 
   specialDenied() {
